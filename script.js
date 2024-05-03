@@ -8,6 +8,7 @@ const feedbackListEl = document.querySelector(".feedbacks");
 const submitBtnEl = document.querySelector(".submit-btn");
 const spinnerEL = document.querySelector(".spinner");
 const upvoteCountEl = document.querySelector(".upvote__count");
+const hashtagsEl = document.querySelector(".hashtags");
 
 const MAX_CHARS = 150;
 const BASE_API_URL = "https://bytegrad.com/course-assets/js/1/api";
@@ -164,3 +165,35 @@ fetch(`${BASE_API_URL}/feedbacks`)
 	.catch((error) => {
 		feedbackListEl.textContent = `Failed to fetch feedback items. Error message: ${error.message}`;
 	});
+
+// ***	HASHTAG LIST COMPONENT *** *** IIFE
+//
+(() => {
+	const clickHandler = (event) => {
+		const clickedEl = event.target;
+		// stop function if click happened in list, but outside buttons
+		if (clickedEl.className === "hashtags") return;
+		// extract company name
+		const companyNameFromHashtag = clickedEl.textContent
+			.substring(1)
+			.toLowerCase()
+			.trim();
+
+		// iterate over each feedback item in the list
+		feedbackListEl.childNodes.forEach((childNode) => {
+			// stop this iteration if it is a text node
+			if (childNode.nodeType === 3) return;
+			// extract company name
+			const companyNameFromFeedbackItem = childNode
+				.querySelector(".feedback__company")
+				.textContent.toLowerCase()
+				.trim();
+
+			// remove feedback item from list if company names are not equal
+			if (companyNameFromHashtag !== companyNameFromFeedbackItem) {
+				childNode.remove();
+			}
+		});
+	};
+	hashtagsEl.addEventListener("click", clickHandler);
+})();
