@@ -6,72 +6,19 @@ const counterEl = document.querySelector(".counter");
 const formEl = document.querySelector(".form");
 const feedbackListEl = document.querySelector(".feedbacks");
 const submitBtnEl = document.querySelector(".submit-btn");
+const spinnerEL = document.querySelector(".spinner");
+const upvoteCountEl = document.querySelector(".upvote__count");
 
 const MAX_CHARS = 150;
+const BASE_API_URL = "https://bytegrad.com/course-assets/js/1/api";
 
 // EVENTS & FUNCTIONS
-
-// *** COUNTER COMPONENT ***
-const inputHandler = () => {
-	// determine max number of chars
-	const maxNrChars = MAX_CHARS;
-
-	// determine number of chars currently typed
-	const nrCharsTyped = textareaEl.value.length;
-
-	// calculate number of chars left
-	const charsLeft = maxNrChars - nrCharsTyped;
-
-	// show number of chars left
-	counterEl.textContent = charsLeft;
-};
-
-textareaEl.addEventListener("input", inputHandler);
-
-// *** FORM COMPONENT ***
-const showVisualIndicator = (textCheck) => {
-	const className = textCheck === "valid" ? "form--valid" : "form--invalid";
-
-	// show valid indicator
-	formEl.classList.add(className);
-
-	// remove visual indicator
-	setTimeout(() => {
-		formEl.classList.remove(className);
-	}, 2000);
-};
-
-const submitHandler = (event) => {
-	// prevent default browser action
-	event.preventDefault();
-
-	// get text from textarea
-	const text = textareaEl.value;
-
-	// validate text
-	if (text.includes("#") && text.length >= 5) {
-		showVisualIndicator("valid");
-	} else {
-		showVisualIndicator("invalid");
-
-		// focus textarea
-		textareaEl.focus();
-
-		// stop this function execution
-		return;
-	}
-
-	// we have text, now extract other info text
-	const hashtag = text.split(" ").find((word) => word.includes("#"));
-	const company = hashtag.substring(1);
-	const badgeLetter = company.substring(0, 1).toUpperCase();
-	const upvoteCount = 0;
-	const daysAgo = 0;
-
+const renderFeedbackItems = (feedbackItem) => {
+	const { upvoteCount, badgeLetter, company, text, daysAgo } = feedbackItem;
 	// new feedback item HTML
 	const feedbackItemHTML = `
 	<li class="feedback">
-	<button>
+	<button class="upvote">
 	<i class="fa-solid fa-caret-up upvote__icon"></i>
 	<span class="upvote__count">${upvoteCount}</span>
 	</button>
@@ -88,16 +35,91 @@ const submitHandler = (event) => {
 	<p class="feedback__date">${daysAgo === 0 ? "NEW" : `${daysAgo}d`}</p>
 	</li>
 	`;
-
 	// insert new item
 	feedbackListEl.insertAdjacentHTML("beforeend", feedbackItemHTML);
+};
+
+// *** COUNTER COMPONENT ***
+const inputHandler = () => {
+	// determine max number of chars
+	const maxNrChars = MAX_CHARS;
+	// determine number of chars currently typed
+	const nrCharsTyped = textareaEl.value.length;
+	// calculate number of chars left
+	const charsLeft = maxNrChars - nrCharsTyped;
+	// show number of chars left
+	counterEl.textContent = charsLeft;
+};
+
+textareaEl.addEventListener("input", inputHandler);
+
+// *** FORM COMPONENT ***
+const showVisualIndicator = (textCheck) => {
+	const className = textCheck === "valid" ? "form--valid" : "form--invalid";
+	// show valid indicator
+	formEl.classList.add(className);
+	// remove visual indicator
+	setTimeout(() => {
+		formEl.classList.remove(className);
+	}, 2000);
+};
+
+const submitHandler = (event) => {
+	// prevent default browser action
+	event.preventDefault();
+	// get text from textarea
+	const text = textareaEl.value;
+
+	// validate text
+	if (text.includes("#") && text.length >= 5) {
+		showVisualIndicator("valid");
+	} else {
+		showVisualIndicator("invalid");
+		// focus textarea
+		textareaEl.focus();
+		// stop this function execution
+		return;
+	}
+
+	// we have text, now extract other info text
+	const hashtag = text.split(" ").find((word) => word.includes("#"));
+	const company = hashtag.substring(1);
+	const badgeLetter = company.substring(0, 1).toUpperCase();
+	const upvoteCount = 0;
+	const daysAgo = 0;
+	// render feedback items in list
+	const feedbackItems = {
+		company,
+		badgeLetter,
+		upvoteCount,
+		text,
+		daysAgo,
+	};
+	renderFeedbackItems(feedbackItems);
+
+	// send feedback item to server
+	fetch(`${BASE_API_URL}/feedbacks`, {
+		method: "POST",
+		body: JSON.stringify(feedbackItems),
+		headers: {
+			Accept: "application/json",
+			"Content-Type": "application/json",
+		},
+	})
+		.then((response) => {
+			if (!response.ok) {
+				console.log("Something went wrong");
+				return;
+			}
+
+			console.log("Successfully submitted");
+		})
+		.catch((error) => console.log(error));
 
 	// clear textarea
 	textareaEl.value = "";
-
 	// blur submit button
 	submitBtnEl.blur();
-
 	// reset counter
 	counterEl.textContent = MAX_CHARS;
 };
@@ -105,3 +127,40 @@ const submitHandler = (event) => {
 formEl.addEventListener("submit", submitHandler);
 
 // *** FEEDBACK LIST COMPONENT ***
+const clickHandler = (event) => {
+	// get clicked HTML element
+	const clickedEl = event.target;
+	// determine if user intended to upvote or expend
+	const upvoteIntention = clickedEl.className.includes("upvote");
+
+	// run the appropriate logic
+	if (upvoteIntention) {
+		// get closest upvote button
+		const upvoteBtnEl = clickedEl.closest(".upvote");
+		// disable upvote button
+		upvoteBtnEl.disabled = true;
+		// select the upvote count element within the upvote button
+		const upvoteCountEl = upvoteBtnEl.querySelector(".upvote__count");
+		// get currently displayed upvote count as number
+		let upvoteCount = +upvoteCountEl.textContent;
+		// set upvote count and incremented by 1
+		upvoteCountEl.textContent = ++upvoteCount;
+	} else {
+		// expend the clicked feedback item
+		clickedEl.closest(".feedback").classList.toggle("feedback--expand");
+	}
+};
+
+feedbackListEl.addEventListener("click", clickHandler);
+
+fetch(`${BASE_API_URL}/feedbacks`)
+	.then((response) => response.json())
+	.then((data) => {
+		// remove spinner
+		spinnerEL.remove();
+		// iterate over each element in feedbacks array and render it in list
+		data.feedbacks.map((feedbackItem) => renderFeedbackItems(feedbackItem));
+	})
+	.catch((error) => {
+		feedbackListEl.textContent = `Failed to fetch feedback items. Error message: ${error.message}`;
+	});
