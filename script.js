@@ -99,23 +99,47 @@ const submitHandler = (event) => {
 	renderFeedbackItems(feedbackItems);
 
 	// send feedback item to server
-	fetch(`${BASE_API_URL}/feedbacks`, {
-		method: "POST",
-		body: JSON.stringify(feedbackItems),
-		headers: {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		},
-	})
-		.then((response) => {
+	// MODERAN FETCH
+	const fetchPostData = async () => {
+		try {
+			const response = await fetch(`${BASE_API_URL}/feedbacks`, {
+				method: "POST",
+				body: JSON.stringify(feedbackItems),
+				headers: {
+					Accept: "application/json",
+					"Content-Type": "application/json",
+				},
+			});
+
 			if (!response.ok) {
 				console.log("Something went wrong");
 				return;
 			}
-
 			console.log("Successfully submitted");
-		})
-		.catch((error) => console.log(error));
+		} catch (error) {
+			console.log(error.message);
+		}
+	};
+	fetchPostData();
+
+	// TRADITIONAL FETCH
+	//fetch(`${BASE_API_URL}/feedbacks`, {
+	//	method: "POST",
+	//	body: JSON.stringify(feedbackItems),
+	//	headers: {
+	//		Accept: "application/json",
+	//		"Content-Type": "application/json",
+	//	},
+	//})
+	//	.then((response) => {
+	//		if (!response.ok) {
+	//			console.log("Something went wrong");
+	//			return;
+	//		}
+
+	//		console.log("Successfully submitted");
+	//	})
+	//	.catch((error) => console.log(error));
 
 	// clear textarea
 	textareaEl.value = "";
@@ -154,17 +178,33 @@ const clickHandler = (event) => {
 
 feedbackListEl.addEventListener("click", clickHandler);
 
-fetch(`${BASE_API_URL}/feedbacks`)
-	.then((response) => response.json())
-	.then((data) => {
+// MODERAN FETCH
+const fetchGetData = async () => {
+	try {
+		const response = await fetch(`${BASE_API_URL}/feedbacks`);
+		const data = await response.json();
 		// remove spinner
 		spinnerEL.remove();
 		// iterate over each element in feedbacks array and render it in list
 		data.feedbacks.map((feedbackItem) => renderFeedbackItems(feedbackItem));
-	})
-	.catch((error) => {
+	} catch (error) {
 		feedbackListEl.textContent = `Failed to fetch feedback items. Error message: ${error.message}`;
-	});
+	}
+};
+fetchGetData();
+
+// TRADITIONAL FETCH
+//fetch(`${BASE_API_URL}/feedbacks`)
+//	.then((response) => response.json())
+//	.then((data) => {
+//		// remove spinner
+//		spinnerEL.remove();
+//		// iterate over each element in feedbacks array and render it in list
+//		data.feedbacks.map((feedbackItem) => renderFeedbackItems(feedbackItem));
+//	})
+//	.catch((error) => {
+//		feedbackListEl.textContent = `Failed to fetch feedback items. Error message: ${error.message}`;
+//	});
 
 // ***	HASHTAG LIST COMPONENT *** *** IIFE
 //
